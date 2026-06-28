@@ -341,17 +341,26 @@ Parse existing issue summaries. Extract test IDs (e.g., `REG-001`, `BL-002`) fro
 **If existing issues found → ask user:**
 
 > "Found [N] test cases already under Epic SCRUM-XX. What should I do?
-> 1. **Skip** — don't create, use existing ones
-> 2. **Replace** — delete existing and create fresh
-> 3. **Add** — create new ones alongside existing"
+> 1. **Sync (recommended)** — reconcile to the Epic: skip IDs already present, create any missing, and update existing ones whose steps/expected-result no longer match the current AC
+> 2. **Skip** — don't create, use existing ones as-is
+> 3. **Replace** — delete existing and create fresh
+> 4. **Add** — create new ones alongside existing (never modifies existing)"
 
 Wait for user answer before proceeding.
 
+- **Sync (default)** → idempotent reconciliation against the Epic ACs:
+  1. Build the desired test set from current Epic ACs (the normal Step 3 mapping).
+  2. **Skip** any desired test whose ID already exists AND whose summary + steps + expected-result still match the AC (no change needed).
+  3. **Add** any desired test whose ID is NOT present.
+  4. **Modify** (via `editJiraIssue`) any existing test whose AC has changed — update summary/steps/expected-result to match the current AC. Note the diff in a comment.
+  5. **Never auto-delete.** An existing test with no matching AC anymore → report it as "orphan — AC removed?" and ask before deleting.
+  6. Report a per-test verdict table (Skipped / Added / Modified / Orphan) → then ask POM prompt (see below).
+  Re-running Sync on an unchanged Epic = no-op (0 created, 0 modified). That is the correct result, not a failure.
 - **Skip** → stop, report existing keys → ask POM prompt (see below)
 - **Replace** → delete all existing children first, then create all fresh → ask POM prompt (see below)
 - **Add** → only create test cases whose IDs are NOT already present (compare `REG-001` etc. in summaries) → ask POM prompt (see below)
 
-**⚠️ MANDATORY — After all 3 options complete, ALWAYS ask:**
+**⚠️ MANDATORY — After all options complete, ALWAYS ask:**
 
 > "Should I also create the POM and test files in the Playwright Automation Framework for these test cases?
 > Reply **yes** or **no**."
@@ -621,3 +630,9 @@ Do NOT overwrite — always append.
 - Use `[VERIFICATION REQUIRED]` tags honestly in Mode B
 - Security tests always apply regardless of mode
 - **Jira mode:** Confirm before creating, report all keys
+
+## Lessons
+
+❌ **Don't:** Treat re-running the skill on an Epic that already has test cases as a Skip-or-Replace-only choice. Forcing the user to pick "delete everything and recreate" or "do nothing" loses work or duplicates it. Reporting "0 created" as if the run failed is also wrong.
+✅ **Do:** Default to **Sync** — reconcile the children to the current Epic ACs: skip unchanged, add missing, modify changed (`editJiraIssue`), never auto-delete (flag orphans, ask). A no-op on an unchanged Epic is the correct, expected result. Idempotent: running it twice changes nothing the second time.
+*(Lesson #1 — 2026-06-29)*
