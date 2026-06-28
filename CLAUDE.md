@@ -19,8 +19,8 @@
 1. `git remote -v`. If origin IS the stack repo (`AI_E2E_QA_Automation_Playwright_Master_Framework`), STOP — never guard the stack repo itself (files belong tracked there). Proceed with the user's request normally.
 2. Else (origin is a company/other repo): check if a guard is already installed — does `.git/hooks/pre-commit` exist? If yes → guard is live, proceed with the request.
 3. If NO guard yet → **install it FIRST, before doing what the user asked:**
-   - Read `HOW-TO-USE-GUARD.md` for the plan.
-   - Run `sh setup-local-guard.sh` from the project root (idempotent; handles untracked + cloned-from-stack, self-tests the hook, scans for leaks).
+   - Run `/guard` (the guard skill — `skills/guard/`). It bundles the script and does the full flow: pre-check, install hook + exclude, untrack if needed, self-test, scan.
+   - Or run the script directly: `sh setup-local-guard.sh` from the project root (idempotent; handles untracked + cloned-from-stack, self-tests the hook, scans for leaks). See `HOW-TO-USE-GUARD.md` for the manual plan.
    - Report: which repo, what changed, final `CLEAN` / `LEAK`.
    - Then continue with the user's original request.
 
@@ -32,6 +32,7 @@ The user should only ever have to say one line — or nothing at all. You guard 
 
 | Capability | Skill / File |
 |---|---|
+| Keep stack OFF company git (pre-commit hook + exclude) | `/guard` (`skills/guard/`) |
 | Live DOM → TypeScript POM | `/explore` |
 | Epic AC → Jira test cases + spec file | `/test-case-creation` |
 | Run tests, auto-fix locators, file bugs, update Jira | `/test-case-execution` |
