@@ -1,8 +1,8 @@
 ---
 name: explore
 description: Explore any URL using Playwright MCP browser — finds all interactive elements (inputs, buttons, links, dropdowns, checkboxes, forms) from live DOM and generates a ready-to-use Playwright TypeScript Page Object Model (POM). Use when user says "/explore [URL]", "explore this page", "find locators for [URL]", or "create POM for [URL]".
-improvements: 4
-last-improved: 2026-06-27
+improvements: 5
+last-improved: 2026-06-29
 ---
 
 # Explore — Live DOM Locator Discovery & POM Generator
@@ -263,3 +263,7 @@ Do NOT overwrite — always append.
 ❌ **Don't:** Load `business-rules.md` or Epic ACs into explore, or write assertions from defects — that breaks the two-source model (explore = locators only)
 ✅ **Do:** Load `known-defects.md` ONLY (Step 1.5), and use it purely to add `// ⚠️ KNOWN DEFECT` comments on matching locators. Comment only — never an assertion. Assertions stay in `/test-case-creation`.
 *(Lesson #4 — 2026-06-27)*
+
+❌ **Don't:** Silently filter out links that leave the page or go to another domain (external links, "Flight Booking", recruiter banners). "ALL interactive elements" means ALL — deciding what's worth keeping is scope creep (AH Rule 26).
+✅ **Do:** Include every `link` with a `/url:` from the snapshot. Tag off-domain ones with an `// EXTERNAL → <domain>` comment so tests know clicking leaves the app. Capture, then annotate — never drop.
+*(Lesson #5 — 2026-06-29)*
