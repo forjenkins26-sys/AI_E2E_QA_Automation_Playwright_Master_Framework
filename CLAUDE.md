@@ -65,11 +65,11 @@ The user should only ever have to say one line — or nothing at all. You guard 
 8. **pressSequentially() not fill()** for constraint tests (maxlength/pattern) — `fill()` bypasses browser enforcement (AH Rule 18)
 9. **Never invent** — selectors, BR-xx rules, error text, URLs. Every assertion + rule traces to a real source (Epic AC, filed bug, observed+verified)
 10. **Stay in command scope** — produce only the command's defined deliverable; no bonus files/steps. Scope creep = scope hallucination (AH Rule 26)
-11. **URL scope** — `/explore` + `/test-case-creation` cover only the given URL. Same-URL states (dropdowns/modals/tabs) are IN; a click that changes the URL is OUT. For a link/button that navigates away, write ONE navigation test (assert destination) but never cover the destination page's contents — that's a separate run (explore Lesson #6 / test-case-creation Lesson #2)
+11. **URL scope** — `/explore` + `/test-case-creation` cover only the given URL. Same-URL states (dropdowns/modals/tabs) are IN; a click that changes the URL is OUT. For a link/button that navigates away, write ONE navigation test (assert destination) but never cover the destination page's contents — that's a separate run (AH Rule 27 / explore Lesson #6 / test-case-creation Lesson #2)
 
 ## Reference Files (load on demand)
 
-- `ANTI-HALLUCINATION-RULES.md` — 26 QA verification rules. Rule 26: stay in command scope (no scope creep) · Rule 25: KB bug-oracle + Confirmed/Suspected tiers · Rule 23: 4-category failure taxonomy · Rule 22: ai:rca before manual classification · Rule 17: headed mode first
+- `ANTI-HALLUCINATION-RULES.md` — 27 QA verification rules. Rule 27: URL scope (nav-test links, don't cover destinations) · Rule 26: stay in command scope (no scope creep) · Rule 25: KB bug-oracle + Confirmed/Suspected tiers · Rule 23: 4-category failure taxonomy · Rule 22: ai:rca before manual classification · Rule 17: headed mode first
 - `AUTO-FIX-PROTOCOL.md` — 17-rule autonomous fix protocol (max 3 attempts; Rule 16 surgical changes; Rule 17 independent verify before DONE — maker≠checker, default-REJECT)
 - `QA-SKILLS-CHEATSHEET.md` — one-page reference for the 3-step flow
 - `knowledge-base/GUIDE.md` — how persistent product memory works + grow workflow

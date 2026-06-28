@@ -383,6 +383,38 @@ npm run ai:rca
 
 ---
 
+## Rule 27: URL scope — explore/test only the given URL; nav-test links, don't cover destinations (Added 2026-06-29)
+
+**The URL you are given is the scope boundary.** Producing locators or test cases for a *different* URL is scope hallucination (sibling of Rule 26), even when an Epic's ACs span multiple pages — the Epic over-reaching does NOT override the user's explicit URL scope.
+
+**IN scope (same URL):** elements in that URL's DOM, plus same-URL states reached without changing the route — dropdowns, modals, tabs, accordions, multi-step forms.
+
+**OUT of scope (URL change):** the moment a click changes the URL (full nav, SPA hash-route change like `#/` → `#/cart`, new tab), that destination is a DIFFERENT page → separate `/explore` + `/test-case-creation` run.
+
+❌ DON'T:
+```
+/test-case-creation <#/ URL> epic SCRUM-270   # Epic AC8-11 describe #/cart
+→ also wrote tests for the #/cart table / promo / Place Order  # WRONG — different URL
+```
+
+✅ DO — for an element on the scoped page that NAVIGATES away, write exactly ONE navigation test:
+```typescript
+// IN: the button is on #/, assert it reaches the destination
+await gk.proceedToCheckout();
+await expect(page).toHaveURL(/#\/cart$/);   // navigation only
+// OUT: do NOT then assert the #/cart table/promo/Place Order — separate run
+```
+
+**Rules:**
+- A link/button *element* to another page stays IN (the `<a>`/button lives in this DOM). The *destination page's contents* are OUT.
+- One navigation-assertion per such element (URL / title / new-tab `target` + `href`). No destination-page coverage.
+- Epic ACs describing a different page → flag "out of scope for this URL; separate run", do not silently generate.
+- External / new-tab links: assert presence + href + `target`; do not follow.
+
+**Lesson (2026-06-29):** SCRUM-270 was scoped to `#/` but its ACs covered the `#/cart` checkout page; test cases (table/promo/Place Order) were generated for `#/cart` — outside scope. The boundary rule existed in `/explore` (Lesson #6) but not in `/test-case-creation`. Fixed: explore Lesson #6, test-case-creation Lesson #2, CLAUDE.md Hard Rule #11, and this rule.
+
+---
+
 ## Rule 17: Run headed mode FIRST for UI testing (Added 2026-06-11)
 
 **When test fails "element not found":**
