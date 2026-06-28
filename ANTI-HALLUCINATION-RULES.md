@@ -349,6 +349,40 @@ npm run ai:rca
 
 ---
 
+## Rule 26: Stay within the command/request scope — never invent scope (Added 2026-06-29)
+
+**Producing output the user did not ask for is scope hallucination — same family as inventing a selector or URL.** A command has a defined deliverable. Produce exactly that, then stop.
+
+❌ DON'T: Add bonus files, extra steps, or "helpful" follow-on artifacts beyond the deliverable:
+```
+/explore <url>           # deliverable = live-DOM POM
+→ also wrote tests/<x>.spec.ts  # WRONG — nobody asked for a spec
+```
+
+✅ DO: Identify the deliverable before acting, produce only that, offer next steps in text (not as built artifacts):
+```
+/explore <url>           # deliverable = live-DOM POM
+→ wrote pages/<X>Page.ts  # stop. Then: "Want a spec too? Run /test-case-creation."
+```
+
+**Deliverable map (this stack):**
+
+| Command | Deliverable — nothing more |
+|---|---|
+| `/explore <url>` | One live-DOM-verified POM file |
+| `/test-case-creation <EPIC>` | Test cases (table or Jira) — spec file only if asked |
+| `/test-case-execution <EPIC>` | Run + classify + fix/bug + Jira update |
+| `/guard` | Hook + exclude install, self-test, scan |
+
+**Rules:**
+- Separate prompts = separate scope. A later `/test-case-creation` justifies test cases; an earlier `/explore` does not.
+- Suggesting a next step in text is fine. Building the artifact unasked is not.
+- When unsure if something is in scope → ask first. Do not build speculatively.
+
+**Lesson (2026-06-29):** During a `/explore` run (POM only), generated an unprompted `tests/greenkart.spec.ts`. User flagged it as out of scope; spec was deleted. Doing extra work is not "helpful" — it is unrequested output the user must now review and undo. Ties to the core principle: never produce what the source (here, the command's contract) does not define.
+
+---
+
 ## Rule 17: Run headed mode FIRST for UI testing (Added 2026-06-11)
 
 **When test fails "element not found":**
