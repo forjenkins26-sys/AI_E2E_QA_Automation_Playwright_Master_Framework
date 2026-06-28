@@ -407,9 +407,26 @@ await expect(page).toHaveURL(/#\/cart$/);   // navigation only
 
 **Rules:**
 - A link/button *element* to another page stays IN (the `<a>`/button lives in this DOM). The *destination page's contents* are OUT.
-- One navigation-assertion per such element (URL / title / new-tab `target` + `href`). No destination-page coverage.
+- One navigation-assertion per such element. No destination-page coverage.
 - Epic ACs describing a different page → flag "out of scope for this URL; separate run", do not silently generate.
-- External / new-tab links: assert presence + href + `target`; do not follow.
+
+**The nav-test TECHNIQUE depends on `target` — verify it first (don't assume):**
+| Element behaviour | How to assert the navigation |
+|---|---|
+| **Same-tab** (full nav, or SPA hash route `#/` → `#/cart`) | `await expect(page).toHaveURL(/dest/)` — current tab's URL changes |
+| **New-tab** (`target="_blank"`) | Capture the popup, assert ITS URL, close it. The **current tab's URL never changes**, so `page.url()` on it = false pass. |
+
+```typescript
+// target="_blank" — capture the new tab (Top Deals / Flight Booking / TechSmartHire all _blank)
+const [popup] = await Promise.all([
+  context.waitForEvent('page'),
+  gk.flightBookingLink.click(),
+]);
+await popup.waitForLoadState();
+await expect(popup).toHaveURL(/dropdownsPractise/);  // destination only — NO page-content assertions
+await popup.close();
+```
+- ⚠️ Pre-2026-06-29 this rule said "external/new-tab links: assert href + target, do not follow." That was WRONG — href presence is not a navigation test (a broken handler still has the right href). For a `_blank` link the real nav test IS allowed: capture the popup, assert its URL, close. Still no destination-page content (AH Rule 27 boundary holds).
 
 **Lesson (2026-06-29):** SCRUM-270 was scoped to `#/` but its ACs covered the `#/cart` checkout page; test cases (table/promo/Place Order) were generated for `#/cart` — outside scope. The boundary rule existed in `/explore` (Lesson #6) but not in `/test-case-creation`. Fixed: explore Lesson #6, test-case-creation Lesson #2, CLAUDE.md Hard Rule #11, and this rule.
 

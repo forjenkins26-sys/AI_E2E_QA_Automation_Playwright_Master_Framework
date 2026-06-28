@@ -640,3 +640,19 @@ Do NOT overwrite — always append.
 ❌ **Don't:** Generate test cases for a different URL than the one given, even when the Epic's ACs span multiple pages. SCRUM-270 (#/) had ACs covering the #/cart checkout page; tests were written for #/cart table/promo/place-order — outside the requested #/ scope. The Epic over-reaching does not override the user's explicit URL scope.
 ✅ **Do:** Scope test generation to the URL given (matches `/explore` Lesson #6). For an element on the scoped page that NAVIGATES away (link/button to another URL), write exactly ONE navigation test — click it, assert the correct destination (URL/title/new-tab href). Do NOT then cover the destination page's own contents (its forms, tables, buttons) — that's a separate `/test-case-creation` run on that URL. ACs that describe a different page → flag them as "out of scope for this URL; covered by a separate run", do not silently generate them. (e.g. GreenKart: PROCEED→#/cart navigation = IN; the #/cart table/promo/Place Order = OUT.)
 *(Lesson #2 — 2026-06-29)*
+
+❌ **Don't:** Write a navigation test as an href-presence check (`toHaveAttribute('href', ...)`), and don't assert `page.url()` on the current tab for a `target="_blank"` link. An href is static markup — a broken handler still has the right href, so href presence is NOT proof of navigation. For a `_blank` link the current tab's URL never changes, so a `page.url()` check on it is a false pass.
+✅ **Do:** Pick the nav-test technique by the element's `target` (verify it live first — AH Rule 17, don't assume):
+- **same-tab** (full nav or SPA hash route): `await expect(page).toHaveURL(/dest/)`.
+- **new-tab** (`target="_blank"`): capture the popup, assert ITS URL, close it:
+```typescript
+const [popup] = await Promise.all([
+  context.waitForEvent('page'),
+  gk.flightBookingLink.click(),
+]);
+await popup.waitForLoadState();
+await expect(popup).toHaveURL(/dropdownsPractise/);  // destination only
+await popup.close();
+```
+GreenKart: Top Deals, Flight Booking, TechSmartHire are ALL `target="_blank"` → popup-capture nav test (GK-017/018/019). Still no destination-page content (AH Rule 27 holds). This corrects the earlier "_blank → assert href only, do not follow" guidance, which let broken navigation pass.
+*(Lesson #3 — 2026-06-29)*
