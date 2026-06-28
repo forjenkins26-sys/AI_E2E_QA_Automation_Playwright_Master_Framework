@@ -4,6 +4,20 @@
 >
 > **First time here?** Read `INSTALL.md` for the copy-paste bootstrap, then this file is the law for how the stack behaves.
 
+## 🔒 FIRST ACTION at a new company — guard this stack from the company git
+
+**Trigger:** when the user says any of — *"set up the guard"*, *"guard this repo"*, *"protect the stack"*, *"make sure stack doesn't push"*, *"new company setup"* — OR when you notice this stack lives inside a git repo whose `origin` is NOT the stack repo and no guard is installed yet:
+
+**Do this automatically, without making the user run commands themselves:**
+
+1. Confirm the repo: run `git remote -v`. If origin IS the stack repo (`AI_E2E_QA_Automation_Playwright_Master_Framework`), STOP — never guard the stack repo itself (files belong tracked there).
+2. Read `HOW-TO-USE-GUARD.md` for the plan.
+3. Run `sh setup-local-guard.sh` from the company project root. It is idempotent + handles both untracked and cloned-from-stack cases, self-tests the hook, and scans for leaks.
+4. Report: which repo, what the script changed, and the final `CLEAN` / `LEAK` result.
+5. Remind the user of the one rule: stage by name, never `git add -A` / `git add .`, never `--no-verify`.
+
+The user should only ever have to say one line. You do the rest.
+
 ## What This Stack Gives You
 
 | Capability | Skill / File |
