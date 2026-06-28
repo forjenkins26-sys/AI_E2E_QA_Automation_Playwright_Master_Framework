@@ -65,6 +65,7 @@ The user should only ever have to say one line — or nothing at all. You guard 
 8. **pressSequentially() not fill()** for constraint tests (maxlength/pattern) — `fill()` bypasses browser enforcement (AH Rule 18)
 9. **Never invent** — selectors, BR-xx rules, error text, URLs. Every assertion + rule traces to a real source (Epic AC, filed bug, observed+verified)
 10. **Stay in command scope** — produce only the command's defined deliverable; no bonus files/steps. Scope creep = scope hallucination (AH Rule 26)
+11. **URL scope** — `/explore` + `/test-case-creation` cover only the given URL. Same-URL states (dropdowns/modals/tabs) are IN; a click that changes the URL is OUT. For a link/button that navigates away, write ONE navigation test (assert destination) but never cover the destination page's contents — that's a separate run (explore Lesson #6 / test-case-creation Lesson #2)
 
 ## Reference Files (load on demand)
 
