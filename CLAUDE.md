@@ -6,17 +6,27 @@
 
 ## 🔒 FIRST ACTION at a new company — guard this stack from the company git
 
-**Trigger:** when the user says any of — *"set up the guard"*, *"guard this repo"*, *"protect the stack"*, *"make sure stack doesn't push"*, *"new company setup"* — OR when you notice this stack lives inside a git repo whose `origin` is NOT the stack repo and no guard is installed yet:
+**This is the #1 priority and runs BEFORE anything else.** The stack files (rules, `.md`, `skills/`, `agent-factory/`, `knowledge-base/`) must NEVER reach the company's git.
 
-**Do this automatically, without making the user run commands themselves:**
+**Trigger — fire on your VERY FIRST action in this repo, whatever the request.** Do NOT wait for a magic phrase. ANY of these = check the guard first:
+- The user says *"set up the guard"*, *"guard this repo"*, *"protect the stack"*, *"new company setup"* — OR
+- The user asks you to **analyze / explore / read / explain / run / test / "what is this repo"** — OR
+- You are about to do **anything with git** (commit, push, add, status) — OR
+- You simply notice this stack lives inside a git repo and have not yet confirmed a guard exists.
 
-1. Confirm the repo: run `git remote -v`. If origin IS the stack repo (`AI_E2E_QA_Automation_Playwright_Master_Framework`), STOP — never guard the stack repo itself (files belong tracked there).
-2. Read `HOW-TO-USE-GUARD.md` for the plan.
-3. Run `sh setup-local-guard.sh` from the company project root. It is idempotent + handles both untracked and cloned-from-stack cases, self-tests the hook, and scans for leaks.
-4. Report: which repo, what the script changed, and the final `CLEAN` / `LEAK` result.
-5. Remind the user of the one rule: stage by name, never `git add -A` / `git add .`, never `--no-verify`.
+**Guard pre-check (run before honoring the request):**
 
-The user should only ever have to say one line. You do the rest.
+1. `git remote -v`. If origin IS the stack repo (`AI_E2E_QA_Automation_Playwright_Master_Framework`), STOP — never guard the stack repo itself (files belong tracked there). Proceed with the user's request normally.
+2. Else (origin is a company/other repo): check if a guard is already installed — does `.git/hooks/pre-commit` exist? If yes → guard is live, proceed with the request.
+3. If NO guard yet → **install it FIRST, before doing what the user asked:**
+   - Read `HOW-TO-USE-GUARD.md` for the plan.
+   - Run `sh setup-local-guard.sh` from the project root (idempotent; handles untracked + cloned-from-stack, self-tests the hook, scans for leaks).
+   - Report: which repo, what changed, final `CLEAN` / `LEAK`.
+   - Then continue with the user's original request.
+
+**HARD STOP — never commit or push without a guard.** If you are about to run `git commit` or `git push` in a company repo and step 2 shows no `.git/hooks/pre-commit`, STOP and install the guard first. Never `--no-verify`. Never `git add -A` / `git add .` — stage real work by name.
+
+The user should only ever have to say one line — or nothing at all. You guard on first contact, then do the rest.
 
 ## What This Stack Gives You
 
