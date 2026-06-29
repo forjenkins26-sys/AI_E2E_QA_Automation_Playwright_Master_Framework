@@ -684,3 +684,11 @@ await shot(page, 'SCRUM-272', 'GK-002', 'after');
 // GK-017 SCRUM-287 — Top Deals opens #/offers in a new tab
 ```
 *(Lesson #6 — 2026-06-29: QA — "don't add comments with rules/lots of things; the client will think they're making a mess.")*
+
+❌ **Don't:** Enumerate a list of N candidate test cases (e.g. a coverage-gap audit) and then act on only a subset — especially after funneling them into an AskUserQuestion that offered fewer options than you listed. The un-offered candidates silently vanish from the list and never get a decision. (Happened 2026-06-29: 7 gaps listed, 4 acted on, 3 dropped without a verdict until the user asked "did you add them, if not why?")
+✅ **Do:** Treat the enumerated list as a CHECKLIST and reconcile against it — every candidate gets an explicit verdict before the task is "done":
+- **Added** (real test, has an Epic/self-evident oracle), or
+- **Fixme** (valid case but behaviour undefined in the Epic → `test.fixme` + `[REQUIREMENT NEEDED]`, AH Rule 19), or
+- **Dropped** with a one-line reason (duplicate of an existing test / marginal value / out of scope).
+If a follow-up question only offers a subset, still report a verdict for the omitted ones — a menu narrowing the choices does not delete the candidates. Restate the full N-row table at the end.
+*(Lesson #7 — 2026-06-29: QA caught 3 enumerated gap-cases dropped without a verdict. Reconcile every candidate; never let a subset menu silently discard list items.)*
