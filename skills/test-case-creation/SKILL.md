@@ -652,7 +652,11 @@ const [popup] = await Promise.all([
 ]);
 await popup.waitForLoadState();
 await expect(popup).toHaveURL(/dropdownsPractise/);  // destination only
+await popup.screenshot({ path: 'screenshots/<EPIC>/<ISSUE>_<TC>_destination.png' }); // arrival proof
 await popup.close();
 ```
 GreenKart: Top Deals, Flight Booking, TechSmartHire are ALL `target="_blank"` → popup-capture nav test (GK-017/018/019). Still no destination-page content (AH Rule 27 holds). This corrects the earlier "_blank → assert href only, do not follow" guidance, which let broken navigation pass.
 *(Lesson #3 — 2026-06-29)*
+
+✅ **Do (nav destination proof):** A nav test to a DIFFERENT URL must capture a **destination screenshot** as arrival proof, alongside the URL assertion. New-tab → `popup.screenshot()` BEFORE `popup.close()`; same-tab → `page.screenshot()` after the URL changes. Playwright's config `screenshot: 'on'` only auto-captures the test's main `page`, NOT the popup — so without an explicit shot the destination tab has zero evidence. The screenshot is the destination at first load ("the link landed here"), NOT content coverage — make no assertions on it (AH Rule 27 holds). GreenKart GK-017/018/019 save `SCRUM-287/288/289_GK-0xx_destination.png`.
+*(Lesson #4 — 2026-06-29: QA asked "we validate the URL → we should also screenshot that page as proof.")*

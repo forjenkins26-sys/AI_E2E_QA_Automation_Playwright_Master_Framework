@@ -424,9 +424,11 @@ const [popup] = await Promise.all([
 ]);
 await popup.waitForLoadState();
 await expect(popup).toHaveURL(/dropdownsPractise/);  // destination only — NO page-content assertions
+await popup.screenshot({ path: 'screenshots/<EPIC>/<ISSUE>_<TC>_destination.png' }); // ARRIVAL PROOF
 await popup.close();
 ```
 - ⚠️ Pre-2026-06-29 this rule said "external/new-tab links: assert href + target, do not follow." That was WRONG — href presence is not a navigation test (a broken handler still has the right href). For a `_blank` link the real nav test IS allowed: capture the popup, assert its URL, close. Still no destination-page content (AH Rule 27 boundary holds).
+- 📸 **A nav test to a DIFFERENT URL MUST capture a destination screenshot as arrival proof** (in addition to the URL assertion). Same-tab nav → `page.screenshot()` after the URL changes; new-tab → `popup.screenshot()` BEFORE `popup.close()`. Playwright's auto-`screenshot:'on'` only captures the test's main `page`, never the popup — so the destination tab has NO evidence unless you take it explicitly. The shot is the page at first load = "the link landed here" proof; it is NOT destination-page **content coverage** (no assertions on it). Added 2026-06-29 per QA request: "validating the URL → also have a screenshot of that as proof."
 
 **Lesson (2026-06-29):** SCRUM-270 was scoped to `#/` but its ACs covered the `#/cart` checkout page; test cases (table/promo/Place Order) were generated for `#/cart` — outside scope. The boundary rule existed in `/explore` (Lesson #6) but not in `/test-case-creation`. Fixed: explore Lesson #6, test-case-creation Lesson #2, CLAUDE.md Hard Rule #11, and this rule.
 
