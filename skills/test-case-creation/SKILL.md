@@ -217,6 +217,40 @@ For each requirement statement:
 
 **IMPORTANT:** Expected result text comes from requirement, not UI. If requirement says `"Enter your first name"` but UI shows `"First name required"` → test asserts `"Enter your first name"` → FAILS → bug caught.
 
+#### Step 3A: Edge-Case Coverage Matrix — MANDATORY per control (AH Rule 29)
+
+**Why this exists:** "write edge case variants" is too vague — coverage ends up depending on whoever remembers to ask "did you check max? empty submit? manual entry?". This matrix removes the memory dependency. **For EVERY interactive control found in the DOM (Step 2), walk its row and emit a verdict for every applicable cell** — Added (Epic defines the oracle), Fixme (valid case, Epic silent → `test.fixme` + `[REQUIREMENT NEEDED]`, record observed behaviour), or N/A (control can't reach that state, one-line reason). Never skip a cell silently (Lesson #7).
+
+**Each probe maps to a named formal test-design technique** — tag the test/subtask with it (industry-standard framing, and it makes the coverage self-documenting):
+- **BVA** (Boundary Value Analysis): min, min−1, max, max+1, empty (= lower boundary of length).
+- **ECP** (Equivalence Class Partitioning): one representative per valid + invalid partition (valid number / negative / non-numeric / huge).
+- **Negative**: the failure/rejection path.
+- **State transition**: actions that change app state (add, remove-one-of-N, re-add merge/dup).
+- **Security**: SQLi / XSS / fuzz (always included regardless of Epic).
+- **Exploratory / "out of the box"**: undocumented behaviours found by probing the live app, not derivable from the spec (e.g. is the qty field editable? is there any max cap?). These are almost always Epic-gaps → fixme.
+
+| Control type | Probe every one of these (→ technique) |
+|---|---|
+| **Text / search input** | empty submit (Negative/BVA) · whitespace-only (ECP-invalid) · no-match result (Negative) · clear-restores (State transition) · case sensitivity (ECP) · max-length via `pressSequentially` (BVA, AH Rule 18) · special chars (ECP-invalid) · SQLi + XSS (Security, always) |
+| **Number / quantity stepper** | default value · increment · decrement (happy) · **decrement at/below the floor / min−1** (BVA) · **maximum / max+1 / upper bound — is there a cap?** (BVA + Exploratory) · **manual keyboard entry** — editable? typed value carries through? (Exploratory) · non-numeric / negative (ECP-invalid) |
+| **Add / submit button** | happy path · **submit with empty/no selection** (Negative) · double-click / rapid repeat (State transition) · disabled-state if any (Negative) |
+| **Cart / list / collection** | single item · **multiple items — remove one of N keeps the rest** (State transition) · **empty-state message, exact text** (Negative/BVA-empty) · re-add merge-vs-duplicate (State transition) · count integrity |
+| **Remove / delete link** | removes the correct item (State transition) · last-item-removed → empty state (BVA-empty) · count decrements |
+| **Link / nav element** | navigates to the right destination — same-tab vs `_blank` popup (AH Rule 27) + destination screenshot |
+| **Promo / coupon / discount** | valid code (ECP-valid) · invalid code (ECP-invalid) · empty apply (Negative) · recalculation (usually Epic-gap → fixme) |
+
+**Output:** a per-control verdict table in the report, tagged with technique. Example (GreenKart quantity stepper):
+
+| Cell | Technique | Verdict | Note |
+|---|---|---|---|
+| default "1" / increment / decrement | Happy | Added (GK-003) | AC3 |
+| decrement floor (min−1) | BVA | Fixme (GK-022) | AC3 silent on floor; observed clamps at 1 |
+| maximum (max+1 / cap?) | BVA + Exploratory | Fixme (GK-027) | no cap observed (set 9999 freely) |
+| manual keyboard entry | Exploratory | Fixme (GK-028) | editable; typed "7" → cart "7 Nos." |
+| non-numeric / negative | ECP-invalid | Fixme | Epic silent |
+
+**The Epic still wins for assertions (AH Rule 19).** This matrix decides WHICH cases to raise; the Epic decides the expected result. A cell with no Epic oracle is NOT invented — it becomes a fixme requirement-gap subtask with the observed behaviour recorded.
+
 #### Mode B: UI-Observed (fallback)
 
 Generate standard scenario types but mark all behavioral assertions:
@@ -692,3 +726,7 @@ await shot(page, 'SCRUM-272', 'GK-002', 'after');
 - **Dropped** with a one-line reason (duplicate of an existing test / marginal value / out of scope).
 If a follow-up question only offers a subset, still report a verdict for the omitted ones — a menu narrowing the choices does not delete the candidates. Restate the full N-row table at the end.
 *(Lesson #7 — 2026-06-29: QA caught 3 enumerated gap-cases dropped without a verdict. Reconcile every candidate; never let a subset menu silently discard list items.)*
+
+❌ **Don't:** Rely on memory / ad-hoc judgement to decide which edge, boundary, and negative cases to write. That makes the QA keep asking "did you check max? empty submit? manual entry? min−1?" — coverage becomes a function of who remembers what, not a system.
+✅ **Do:** Walk the **Step 3A Edge-Case Coverage Matrix (AH Rule 29)** for EVERY control found in the DOM, and tag each case with its formal technique — **BVA** (min/min−1/max/max+1/empty), **ECP** (one rep per valid+invalid partition), **Negative**, **State transition**, **Security**, **Exploratory/out-of-the-box** (undocumented behaviour found by probing, e.g. "is the qty field editable?", "is there any max cap?"). Emit a verdict per cell (Added / Fixme-gap / N/A) — never skip one silently (Lesson #7). The matrix decides WHICH cases; the Epic still decides the expected result (AH Rule 19). A cell with no Epic oracle → fixme requirement-gap subtask with the observed behaviour recorded.
+*(Lesson #8 — 2026-06-29: QA asked "why no rule for these case types? how do I stop having to ask?" and "can we frame them as BVA/ECP/out-of-the-box?". Answer: a standing technique-tagged matrix walked per control, so coverage no longer depends on the QA enumerating cases.)*

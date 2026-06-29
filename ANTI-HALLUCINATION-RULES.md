@@ -471,6 +471,28 @@ test('GK-002 search filters products', async ({ page }) => {
 
 ---
 
+## Rule 29: Walk the Edge-Case Coverage Matrix per control — tag by formal technique (Added 2026-06-29)
+
+**Edge / negative / boundary coverage must come from a standing matrix walked per control, NOT from memory.** If which cases get written depends on whoever remembers to ask "did you check max? empty submit? min−1? manual entry?", coverage is a lottery. Replace memory with a checklist.
+
+**Procedure:** for EVERY interactive control discovered in the DOM, walk its row in the matrix (defined in `test-case-creation` Step 3A) and emit a verdict for every applicable cell — **Added** (Epic gives the oracle → real test), **Fixme** (valid case, Epic silent → `test.fixme` + `[REQUIREMENT NEEDED]`, record the observed behaviour), or **N/A** (one-line reason). Never skip a cell silently (Lesson #7). Output a per-control verdict table.
+
+**Tag every case with its formal technique** (industry framing + self-documenting):
+| Technique | Cases it generates |
+|---|---|
+| **BVA** (Boundary Value Analysis) | min, min−1, max, max+1, empty (lower length boundary) |
+| **ECP** (Equivalence Class Partitioning) | one representative per valid + invalid partition (valid / negative / non-numeric / oversized) |
+| **Negative** | the failure / rejection path (empty submit, no-match) |
+| **State transition** | actions that change state (add, remove-one-of-N, re-add merge/dup) |
+| **Security** | SQLi / XSS / fuzz — always, regardless of Epic |
+| **Exploratory / out-of-the-box** | undocumented behaviour found by probing the live app, not derivable from the spec (is the qty field editable? is there a max cap?) — almost always an Epic-gap → fixme |
+
+**The Epic still owns the expected result (Rule 19).** This rule decides WHICH cases to raise; the Epic decides what they assert. A cell with no Epic oracle is never invented — it becomes a fixme requirement-gap subtask carrying the observed behaviour for a future AC.
+
+**Lesson (2026-06-29):** the QA repeatedly had to ask "did we cover empty-search / decrement-floor / max-qty / manual-entry?" — because the skill said only "write edge case variants" with no concrete list. Three rounds of gaps were caught by the user, not the process. Fixed by adding the per-control matrix (Step 3A), technique tags (BVA/ECP/Negative/State/Security/Exploratory), and `test-case-creation` Lesson #8 — so the QA never has to enumerate edge cases for the agent again. GreenKart gaps GK-022/025/026/027/028 (SCRUM-292/295/296/297/298) were the fixme requirement-gaps this produced.
+
+---
+
 ## Rule 17: Run headed mode FIRST for UI testing (Added 2026-06-11)
 
 **When test fails "element not found":**
