@@ -434,6 +434,43 @@ await popup.close();
 
 ---
 
+## Rule 28: State-mutation tests capture before/after screenshots as evidence (Added 2026-06-29)
+
+**A test that asserts a STATE TRANSITION must capture the page before AND after the action** — two shots that visually prove the mutation happened. This is the same evidence principle as Rule 27's destination-shot (📸 arrival proof), specialized for in-page state changes instead of navigation.
+
+**TRIGGER (do not apply blanket — only when this is true):** the test's point is that an action *changes* observable state. Examples: search filters the grid (30→1), quantity stepper (1→3→2), ADD TO CART (count 0→1), remove (1→0), filter/sort, modal open/close, total recalculation.
+
+**DON'T apply to** (the single auto-`screenshot:'on'` end-shot, or Rule 27's destination shot, already suffices):
+- Presence / DOM-existence tests (nothing changes → two identical shots = noise)
+- Navigation tests (already have home + destination shots per Rule 27 — that IS before/after)
+- Pure assertion-on-load tests (no action)
+- Security inertness tests (asserting *nothing* happened)
+
+```typescript
+// before/after helper — paths must be unique per test+phase
+const shot = (page, scrum, gk, phase: 'before' | 'after') =>
+  page.screenshot({ path: `screenshots/<EPIC>/${scrum}_${gk}_${phase}.png` });
+
+test('GK-002 search filters products', async ({ page }) => {
+  await expect(gk.products).toHaveCount(30);          // before-state asserted
+  await shot(page, 'SCRUM-272', 'GK-002', 'before');
+  await gk.searchProduct('Brocolli');
+  await expect(gk.products).toHaveCount(1);           // after-state asserted
+  await shot(page, 'SCRUM-272', 'GK-002', 'after');
+});
+```
+
+**Rules:**
+- The shots are EVIDENCE, never the oracle. The `expect()` on before-state and after-state is the validation; the screenshots are human-readable proof for review/reports. Never let a screenshot stand in for an assertion (that's the Rule 15 / AFP-15 trap — `toBeTruthy()` mechanics, not outcomes).
+- Assert the before-state too, not just after. A clean before-assert + before-shot is what makes the pair meaningful (proves it started where you claim).
+- Unique paths per phase (`_before` / `_after`) so they don't overwrite.
+
+**Why not blanket (the honest cost):** `screenshot:'on'` already auto-captures the end-state, and `trace:'on-first-retry'` captures the full before/after timeline on failure. Adding two explicit shots to *every* test doubles screenshot clutter and maintenance for tests where nothing visibly changes, and creates false "looks like coverage" confidence. Gate on the state-mutation trigger to keep the signal high.
+
+**Lesson (2026-06-29):** Added per QA request — "screenshot before doing any action and after doing action for each test case." Adopted TARGETED (state-mutation only), not blanket, after weighing cost vs. evidence value. Applied to GreenKart GK-002/003/004/005/007 (the mutation tests); presence/nav/security tests deliberately excluded.
+
+---
+
 ## Rule 17: Run headed mode FIRST for UI testing (Added 2026-06-11)
 
 **When test fails "element not found":**

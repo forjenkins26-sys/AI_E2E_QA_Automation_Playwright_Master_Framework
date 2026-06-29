@@ -660,3 +660,27 @@ GreenKart: Top Deals, Flight Booking, TechSmartHire are ALL `target="_blank"` �
 
 ✅ **Do (nav destination proof):** A nav test to a DIFFERENT URL must capture a **destination screenshot** as arrival proof, alongside the URL assertion. New-tab → `popup.screenshot()` BEFORE `popup.close()`; same-tab → `page.screenshot()` after the URL changes. Playwright's config `screenshot: 'on'` only auto-captures the test's main `page`, NOT the popup — so without an explicit shot the destination tab has zero evidence. The screenshot is the destination at first load ("the link landed here"), NOT content coverage — make no assertions on it (AH Rule 27 holds). GreenKart GK-017/018/019 save `SCRUM-287/288/289_GK-0xx_destination.png`.
 *(Lesson #4 — 2026-06-29: QA asked "we validate the URL → we should also screenshot that page as proof.")*
+
+❌ **Don't:** Add before/after screenshots to EVERY test as blanket "coverage." For presence/load-assertion tests nothing changes, so two near-identical shots are noise; `screenshot: 'on'` already auto-captures the end-state, and a screenshot is never the oracle (the `expect()` is). Blanket shots create false "looks like coverage" confidence and double maintenance.
+✅ **Do (state-mutation evidence — AH Rule 28):** Capture before AND after screenshots ONLY for tests whose point is a STATE TRANSITION (search filter 30→1, qty stepper 1→3→2, add-to-cart 0→1, remove 1→0, filter/sort, modal toggle, total recalc). Assert the before-state too (not just after) so the pair is meaningful. Skip for: presence/DOM-existence, navigation (already has home+destination per Lesson #4), pure load-assertion, security-inertness tests. GreenKart applied to GK-002/003/004/005/007 only.
+```typescript
+const shot = (page, scrum, gk, phase: 'before' | 'after') =>
+  page.screenshot({ path: `screenshots/<EPIC>/${scrum}_${gk}_${phase}.png` });
+// in a mutation test:
+await expect(gk.products).toHaveCount(30);           // before-state
+await shot(page, 'SCRUM-272', 'GK-002', 'before');
+await gk.searchProduct('Brocolli');
+await expect(gk.products).toHaveCount(1);            // after-state
+await shot(page, 'SCRUM-272', 'GK-002', 'after');
+```
+*(Lesson #5 — 2026-06-29: QA asked "screenshot before and after each action." Adopted TARGETED, not blanket, after weighing cost vs evidence.)*
+
+❌ **Don't:** Put internal reasoning in spec-file comments — rule citations (`AH Rule 27`), dated verification notes (`VERIFIED 2026-06-29`), scope-decision essays, "this was WRONG before" history, requirement-discrepancy paragraphs. The spec is a CLIENT-FACING deliverable; multi-line reasoning comments make it look like the team is arguing with itself / making a mess.
+✅ **Do:** One short comment per test — `GK-ID + SCRUM key + what it checks`. The test title already carries traceability for `--grep`. Inline mechanics comments (`// before`, `// after`) are fine. Move ALL reasoning to where it belongs: Jira issue descriptions, `DECISIONS.md`, the KB, and these stack rules — NOT the spec.
+```typescript
+// ❌ messy (5 lines of rule-citing essay in the spec)
+// GK-017 SCRUM-287 — Top Deals ... VERIFIED 2026-06-29 ... Scope rule (AH Rule 27) ...
+// ✅ clean
+// GK-017 SCRUM-287 — Top Deals opens #/offers in a new tab
+```
+*(Lesson #6 — 2026-06-29: QA — "don't add comments with rules/lots of things; the client will think they're making a mess.")*
