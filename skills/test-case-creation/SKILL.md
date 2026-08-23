@@ -82,18 +82,27 @@ Generate comprehensive functional test cases using a **two-source approach**:
 **Inputs:**
 - Epic key or URL (e.g., `SCRUM-48`, `https://site.atlassian.net/browse/SCRUM-48`)
 - URL of feature under test (optional if Epic description contains URL)
-- Output format: `markdown` (default) or `jira`
-- Jira project key (required if output=jira)
+- Output format: **`jira` when an Epic key is supplied** · `markdown` only when explicitly requested
+- Jira project key (defaults to the Epic key's prefix — `SCRUM-603` → project `SCRUM`)
 
-**⚠️ MANDATORY — If Epic provided but output format NOT specified:**
+**⚠️ Output format — an Epic means Jira:**
 
-Do NOT silently default to markdown. Ask first:
+Supplying an Epic key IS the request to create test cases under it. Do **not** treat markdown as the default in Mode A, and do **not** stop to ask which format — creating the issues in Jira is the expected deliverable.
 
-> "Where would you like the test cases?
-> 1. **Jira (via MCP)** — create them directly under Epic SCRUM-XX in Jira
-> 2. **Here** — show them as a table in this chat"
+| Input | Output |
+|---|---|
+| `/test-case-creation SCRUM-603` | **Jira** — create under SCRUM-603 |
+| `/test-case-creation <URL> epic SCRUM-603` | **Jira** — create under SCRUM-603 |
+| `/test-case-creation SCRUM-603 output markdown` | Markdown table only |
+| `/test-case-creation <URL>` (Mode B, no Epic) | Markdown — nothing to parent to |
 
-Wait for user answer before proceeding to Step 2.
+**Confirm the count before creating, not the format:**
+
+> "Ready to create **N test cases** in Jira under SCRUM-603 (project SCRUM). Proceed?"
+
+That single confirmation covers the write. Do not additionally ask where the output should go when an Epic was given.
+
+**Finishing with only a spec file and no Jira issues is a failed run in Mode A.** If issue creation fails, report the failure explicitly — never fall back to markdown silently and present it as success.
 
 #### Mode B: UI-Observed (No Epic — partial coverage)
 
@@ -162,7 +171,37 @@ mcp__atlassian__getJiraIssue({
 
 **Do NOT:** fall back to the Jira REST API, search the filesystem for API tokens, or scrape Jira through a browser session. Archiving is a payload-size condition, not an auth failure — MCP is working. A credential hunt will be blocked by the classifier and is the wrong instinct regardless (secrets policy).
 
-If all three attempts archive, STOP and report it. Do not proceed on a partially-read Epic — inventing ACs from a truncated fetch violates AH Rule 19 at the source.
+**If narrowing does not help, the payload is still too large — page it, do not abandon MCP.**
+
+Archiving is **payload-size-driven, not session-wide**. Proven: `maxResults: 25` on a 20-issue JQL archives, while `maxResults: 5` on the same query returns inline, in the same session. Writes (`createJiraIssue`) and small reads work throughout.
+
+**Escalation ladder — never leave MCP:**
+
+| Step | Action |
+|---|---|
+| 1 | Narrow `fields` to the minimum the step needs |
+| 2 | **Paginate.** `maxResults: 5` (or lower), follow `nextPageToken` until `isLast: true`, accumulate across pages |
+| 3 | Fetch one issue at a time by key with a single field |
+
+Pagination is the reliable fix for a large result set — a 20-issue Epic reads cleanly in 4 pages of 5.
+
+**Only if a single-field, single-issue read still archives**, STOP and report:
+
+> Cannot read {KEY} — MCP results are archiving even at minimum page size. **Fix: start a fresh Claude Code session and re-run.**
+
+**When all three attempts archive, STOP. Do not improvise a workaround.**
+
+Report exactly this to the user and end the run:
+
+> Cannot read Epic {KEY} — every MCP result is being archived in this session, including single-field requests. This is a session-level condition, not a Jira or auth problem. **Fix: start a fresh Claude Code session and re-run this command.** The Epic is readable; this session cannot receive it.
+
+**Never do any of these instead — all are wrong and one is a security violation:**
+- ❌ Jira REST API via curl/Bash — the MCP server is the sanctioned path; going around it defeats the integration
+- ❌ Searching for `.env` files, `JIRA_API_TOKEN`, `ATLASSIAN_TOKEN`, or any credential — blocked by the classifier, and hunting for secrets is prohibited regardless of intent
+- ❌ Scraping Jira through a Playwright browser session
+- ❌ Proceeding on partial ACs, or reconstructing them from memory, a prior run, or the KB — inventing ACs violates AH Rule 19 at the source and produces tests that assert the wrong thing
+
+A blocked run that reports honestly is a correct outcome. A run that invents ACs to keep going is a silent failure that ships wrong tests.
 
 **Extract from Epic:**
 - Summary (feature name)
@@ -358,27 +397,6 @@ For each requirement statement:
 | **Link / nav element** | navigates to the right destination — same-tab vs `_blank` popup (AH Rule 27) + destination screenshot |
 | **Promo / coupon / discount** | valid code (ECP-valid) · invalid code (ECP-invalid) · empty apply (Negative) · recalculation (usually Epic-gap → fixme) |
 
-**App-specific layer — `app-patterns.json` (additive, hint-only):**
-
-The matrix above is generic by control TYPE. `knowledge-base/<PROJECT>/app-patterns.json` adds what THIS app has already taught us — so the 3rd form with a mobile field reuses what runs 1–2 established instead of re-deriving it.
-
-Before walking a control's row, check for a matching `fieldPattern`:
-
-| Pattern field | How it feeds Step 3A |
-|---|---|
-| `constraints` (maxLength, inputType) | Gives BVA its real boundaries — test 9/10/11 instead of guessing |
-| `errorText` | The exact string a Negative case should assert |
-| `standardCases` | Cases this field type always needed here — merge with the generic row |
-| `flowPatterns` | Known end-state for a journey (e.g. login → products page) |
-| `inconsistencies` | Known cross-page mismatches worth probing again |
-
-**Three hard limits (AH Rule 19 + Rule 30):**
-1. **A pattern is a hint, never an oracle.** It suggests WHICH cases to write and WHERE the element usually is. The **Epic AC still decides the expected result**. A pattern's `errorText` may only be asserted when the AC does not state one — otherwise it is `[VERIFICATION REQUIRED]`.
-2. **Re-verify before use.** A pattern reflects the app when it was written. Confirm against the Step 2 DOM. **On mismatch, the live DOM wins** — update the pattern, never bend the test to the stale value.
-3. **Never invent a pattern to fill a gap.** No matching pattern → walk the generic matrix normally. Absence is not a reason to guess.
-
-If the file is missing → continue silently. It is purely additive.
-
 **Output:** a per-control verdict table in the report, tagged with technique. Example (GreenKart quantity stepper):
 
 | Cell | Technique | Verdict | Note |
@@ -457,7 +475,9 @@ All behavioral expected results tagged: `[VERIFICATION REQUIRED — verify again
 
 ### Step 6: Output Test Cases
 
-#### Option A: Markdown Table (default)
+#### Option A: Markdown Table (Mode B, or when markdown is explicitly requested)
+
+**Not the default in Mode A.** If an Epic key was supplied, use Option B (Jira) — see Step 1.
 
 ```markdown
 # Test Cases for [Feature Name]
@@ -757,6 +777,7 @@ Before finishing:
 - ✅ Test steps are clear, numbered, actionable
 - ✅ Test data provided for all scenarios
 - ✅ Source column populated for every test case — with Epic line ref not just key
+- ✅ **Mode A: test cases EXIST IN JIRA under the Epic.** An Epic key was supplied, so Jira issues are the deliverable — a run that produced only a spec file and no issues has **not** completed. Verify with `searchJiraIssuesUsingJql: parent = {EPIC}` before reporting success, and report the actual count returned.
 - ✅ **If Jira output:** Confirm count + project before creating
 - ✅ **If Jira output:** Report all created keys
 - ✅ **If POM created:** Run Step 6B locator verification — all ✅ or flagged ⚠️
